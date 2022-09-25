@@ -1,0 +1,26 @@
+- hosts: localhost
+  become: false
+  collections:
+    - tuxinvader.launchpad
+
+  tasks:
+
+    - name: Start Interactive login
+      start_interactive_login:
+      register: login_start
+
+    - name: Prompt user
+      debug:
+        msg: "Please open this URL to authorize Ansible access: {{ login_start.authorization_url }}"
+
+    - name: Wait for auth to complete
+      wait_interactive_login:
+        credentials: "{{ login_start.credentials | to_json }}"
+      delay: 5
+      retries: 12
+      register: login_done
+      until: login_done.LP_ACCESS_TOKEN is defined
+
+    - name: Display Tokens
+      debug:
+        msg: "Please Add these to your environment: LP_ACCESS_TOKEN={{ login_done.LP_ACCESS_TOKEN }}   LP_ACCESS_SECRET={{ login_done.LP_ACCESS_SECRET }}"
