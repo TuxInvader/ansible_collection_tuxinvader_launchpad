@@ -1,0 +1,12 @@
+- hosts: localhost
+  become: false
+  collections:
+    - tuxinvader.launchpad
+
+  tasks:
+
+    - name: Upload Kernel packages to PPA
+      ppa_upload_package:
+        source_changes: /usr/local/src/cod/debs/v5.15.70/linux-generic-5.15_5.15.70_source.changes
+        ppa: ~tuxinvader/lts-mainline-longterm
+      
