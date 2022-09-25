@@ -29,12 +29,6 @@ options:
         type: int
         default 2
 
-    authorize:
-        description: Use an Authenticated connection to launchpad. You need to set LP_ACCESS_[TOKEN|SECRET] env vars for authentication
-        required: false
-        default: false
-        type: bool
-
 author:
     - Mark Boddington (@TuxInvader)
 '''
@@ -74,7 +68,6 @@ def run_module():
         name=dict(type='str', required=True),
         project=dict(type='str', required=True),
         max_sources=dict(type='int', required=False, default=2),
-        authorize=dict(type='bool', required=False, default=True)
     )
 
     # seed the result dict in the object
@@ -102,7 +95,7 @@ def run_module():
         module.exit_json(**result)
 
     try:
-      launchpad = LPHandler(module.params['authorize'])
+      launchpad = LPHandler(True)
       details = launchpad.prune_ppa(module.params['project'], module.params['name'], module.params['max_sources'])
       result = {**details, **result}
       if result['count'] > 0:

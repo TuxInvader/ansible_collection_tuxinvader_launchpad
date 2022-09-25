@@ -9,6 +9,7 @@ import json
 
 LP_APP_NAME = 'ansible'
 
+
 class LPHandler(object):
 
   _consumer = LP_APP_NAME
@@ -30,7 +31,7 @@ class LPHandler(object):
 
   def _login(self):
     if self._authorize:
-      self.api_root = Launchpad(credentials=self._credentials, service_root='production', credential_store=self._credStore, authorization_engine=None, version='devel')
+      self.api_root = Launchpad.login_with(application_name='ansible', service_root='production', credential_store=self._credStore, authorization_engine=None, version='devel')
     else:
       self.api_root = Launchpad.login_anonymously('ansible', 'production', version='devel')
 
@@ -133,9 +134,9 @@ class LPHandler(object):
     result = { 'pruned': {}, 'count': 0  }
     if self.api_root is None:
       self._login()
+
     project = self.api_root.projects[project]
     lp_ppa = list(filter(lambda x: x.name == name, project.ppas))[0]
-    oldest = None
     pb = lp_ppa.getPublishedSources(status="Published")
 
     if pb.total_size > max_sources:
@@ -143,7 +144,7 @@ class LPHandler(object):
       for package in ascpkgs[:( pb.total_size - max_sources )]:
         result[ 'pruned' ][ package.source_package_name ] = package.date_published
         result['count'] += 1
-        #package.requestDeletion()
+        package.requestDeletion()
     return result
 
    
@@ -155,16 +156,14 @@ class EnvCredentialStore(CredentialStore):
   def __init__(self, consumer=LP_APP_NAME, credential_save_failed=None):
     self._consumer = consumer
     self._credentials = {}
-    self._credentials[consumer] = {}
-    self._credentials[consumer]['consumer'] = Consumer(consumer, '')
-    self._credentials[consumer]['access_token'] = AccessToken( os.environ.get('LP_ACCESS_TOKEN'), os.environ.get('LP_ACCESS_SECRET') )
+    self._credentials[consumer] = Credentials(consumer_name=consumer, access_token=AccessToken( os.environ.get('LP_ACCESS_TOKEN'), os.environ.get('LP_ACCESS_SECRET') ))
     super().__init__(credential_save_failed)
 
   def do_save(self, credentials, unique_key=LP_APP_NAME):
     self._credentials[unique_key] = credentials
 
   def do_load(self, unique_key=LP_APP_NAME):
-    creds = self._credentials.get(unique_key)
+    return self._credentials.get(unique_key)
 
 class ReqTokenCredentials(Credentials):
 
