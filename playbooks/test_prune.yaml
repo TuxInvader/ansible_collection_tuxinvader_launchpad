@@ -13,5 +13,5 @@
       prune_ppa:
         name: lts-mainline
         project: ~tuxinvader
-        max_sources: 1
+        max_sources: 2
       

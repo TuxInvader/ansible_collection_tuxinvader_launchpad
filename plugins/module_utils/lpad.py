@@ -31,9 +31,10 @@ class LPHandler(object):
 
   def _login(self):
     if self._authorize:
-      self.api_root = Launchpad.login_with(application_name='ansible', service_root='production', credential_store=self._credStore, authorization_engine=None, version='devel')
+      ae = AuthorizeRequestTokenWithURL(service_root='production', consumer_name=self._consumer)
+      self.api_root = Launchpad.login_with(application_name=self._consumer, service_root='production', credential_store=self._credStore, authorization_engine=ae, version='devel')
     else:
-      self.api_root = Launchpad.login_anonymously('ansible', 'production', version='devel')
+      self.api_root = Launchpad.login_anonymously(self._consumer, 'production', version='devel')
 
   def start_interactive_login(self):
     self._credStore = EnvCredentialStore(self._consumer)
@@ -160,10 +161,15 @@ class EnvCredentialStore(CredentialStore):
     super().__init__(credential_save_failed)
 
   def do_save(self, credentials, unique_key=LP_APP_NAME):
+    unique_key = unique_key.split('@')[0]
     self._credentials[unique_key] = credentials
 
   def do_load(self, unique_key=LP_APP_NAME):
-    return self._credentials.get(unique_key)
+    unique_key = unique_key.split('@')[0]
+    creds = self._credentials.get(unique_key)
+    if creds is None:
+      raise Exception('No credentials stored under: ' + unique_key)
+    return creds;
 
 class ReqTokenCredentials(Credentials):
 
