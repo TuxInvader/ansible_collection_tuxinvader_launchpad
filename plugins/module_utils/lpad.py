@@ -58,78 +58,104 @@ class LPHandler(object):
       self._login()
     people = self.api_root.people
     for person in people.find(text=name):
-      result['self_link'] = person.self_link
-      result['web_link'] = person.web_link
-      result['resource_type_link'] = person.resource_type_link
-      result['http_etag'] = person.http_etag
-      result['account_status'] = person.account_status
-      result['account_status_history'] = person.account_status_history
-      result['date_created'] = person.date_created
-      result['description'] = person.description
-      result['display_name'] = person.display_name
-      result['hide_email_addresses'] = person.hide_email_addresses
-      result['homepage_content'] = person.homepage_content
-      result['is_probationary'] = person.is_probationary
-      result['is_team'] = person.is_team
-      result['is_ubuntu_coc_signer'] = person.is_ubuntu_coc_signer
-      result['is_valid'] = person.is_valid
-      result['karma'] = person.karma
-      result['mailing_list_auto_subscribe_policy'] = person.mailing_list_auto_subscribe_policy
-      result['name'] = person.name
-      result['private'] = person.private
-      result['time_zone'] = person.time_zone
-      result['visibility'] = person.visibility
+      for att in person.lp_attributes:
+        result[att] = person.lp_get_parameter( att )
     return result
 
-  def get_project_info(self, name):
-    result = { 'ppas': {} }
+  def _get_project(self, name):
+    project = self.api_root.projects[name]
+    if project == None:
+      raise LaunchPadLookupError("Project '" + name + "' not found")
+    return project
+
+  def _build_project_result(self, project):
+    result = { 'ppas': [] }
+    for att in project.lp_attributes:
+      result[att] = project.lp_get_parameter( att )
+    for ppa in project.ppas:
+      ppa_atts = {}
+      for att in ppa.lp_attributes:
+        ppa_atts[att] = ppa.lp_get_parameter( att )
+      result['ppas'].append( ppa_atts )
+    return result
+
+  def _get_ppa(self, project, name):
+    ppa = list(filter(lambda x: x.name == name, project.ppas))
+    if len(ppa) == 0:
+      raise LaunchPadLookupError("PPA '" + name + "' not found")
+    return ppa[0]
+
+  def _build_ppa_result(self, ppa):
+    result = { 'sources': [] }
+    for att in ppa.lp_attributes:
+      result[att] = ppa.lp_get_parameter( att )
+
+    for source in ppa.getPublishedSources(status="Published"):
+      source_atts = {}
+      for att in source.lp_attributes:
+        source_atts[att] = source.lp_get_parameter( att )
+      result['sources'].append( source_atts )
+
+    return result
+
+  def get_project_info(self, name, status=None):
     if self.api_root is None:
       self._login()
-    project = self.api_root.projects[name]
-    result['self_link'] = project.self_link
-    result['web_link'] = project.web_link
-    result['resource_type_link'] = project.resource_type_link
-    result['http_etag'] = project.http_etag
-    result['account_status'] = project.account_status
-    result['account_status_history'] = project.account_status_history
-    result['date_created'] = project.date_created
-    result['description'] = project.description
-    result['display_name'] = project.display_name
-    result['hide_email_addresses'] = project.hide_email_addresses
-    result['homepage_content'] = project.homepage_content
-    result['is_probationary'] = project.is_probationary
-    result['is_team'] = project.is_team
-    result['is_ubuntu_coc_signer'] = project.is_ubuntu_coc_signer
-    result['is_valid'] = project.is_valid
-    result['karma'] = project.karma
-    result['mailing_list_auto_subscribe_policy'] = project.mailing_list_auto_subscribe_policy
-    result['name'] = project.name
-    result['private'] = project.private
-    result['time_zone'] = project.time_zone
-    result['visibility'] = project.visibility
-    for ppa in project.ppas:
-      result['ppas'][ppa.name] = {}
-      result['ppas'][ppa.name]['self_link'] = ppa.self_link
-      result['ppas'][ppa.name]['web_link'] = ppa.web_link
-      result['ppas'][ppa.name]['resource_type_link'] = ppa.resource_type_link
-      result['ppas'][ppa.name]['http_etag'] = ppa.http_etag
-      result['ppas'][ppa.name]['authorized_size'] = ppa.authorized_size
-      result['ppas'][ppa.name]['build_debug_symbols'] = ppa.build_debug_symbols
-      result['ppas'][ppa.name]['description'] = ppa.description
-      result['ppas'][ppa.name]['displayname'] = ppa.displayname
-      result['ppas'][ppa.name]['external_dependencies'] = ppa.external_dependencies
-      result['ppas'][ppa.name]['name'] = ppa.name
-      result['ppas'][ppa.name]['permit_obsolete_series_uploads'] = ppa.permit_obsolete_series_uploads
-      result['ppas'][ppa.name]['private'] = ppa.private
-      result['ppas'][ppa.name]['publish'] = ppa.publish
-      result['ppas'][ppa.name]['publish_debug_symbols'] = ppa.publish_debug_symbols
-      result['ppas'][ppa.name]['reference'] = ppa.reference
-      result['ppas'][ppa.name]['relative_build_score'] = ppa.relative_build_score
-      result['ppas'][ppa.name]['require_virtualized'] = ppa.require_virtualized
-      result['ppas'][ppa.name]['signing_key_fingerprint'] = ppa.signing_key_fingerprint
-      result['ppas'][ppa.name]['status'] = ppa.status
-      result['ppas'][ppa.name]['suppress_subscription_notifications'] = ppa.suppress_subscription_notifications
-    return result
+
+    try:
+      project = self._get_project(name)
+    except LaunchPadLookupError as e:
+      raise Exception(e.msg)
+
+    return self._build_project_result(project)
+
+  def get_ppa_info(self, project_name, name):
+    if self.api_root is None:
+      self._login()
+
+    try:
+      project = self._get_project(project_name)
+      ppa = self._get_ppa(project, name)
+    except LaunchPadLookupError as e:
+      raise Exception(e.msg)
+
+    return self._build_ppa_result(ppa)
+
+  def upsert_ppa(self, project_name, name, ensure, displayname=None, description=None):
+    result = { }
+    ppa = None
+
+    if self.api_root is None:
+      self._login()
+
+    try:
+      project = self._get_project(project_name)
+    except LaunchPadLookupError as e:
+      raise Exception(e.msg)
+
+    try:
+      ppa = self._get_ppa(project, name)
+    except LaunchPadLookupError as e:
+      pass
+
+    if ppa is not None:
+      if ppa.status == "Active" and ensure.lower() == "absent":
+        ppa.lp_delete()
+      if ppa.displayname != displayname:
+        ppa.displayname = displayname
+        ppa.lp_save()
+
+    else:
+      if ensure.lower() == "present":
+        project.createPPA(name=name, displayname=displayname, description=description)
+
+    try:
+      ppa = self._get_ppa(project, name)
+    except LaunchPadLookupError as e:
+      raise Exception(e.msg)
+
+    return self._build_ppa_result(ppa)
+
 
   def prune_ppa(self, project, name, max_sources):
     result = { 'pruned': {}, 'count': 0  }
@@ -183,4 +209,6 @@ class ReqTokenCredentials(Credentials):
     creds = json.loads(credentials)
     self._request_token = AccessToken.from_params( creds )
 
+class LaunchPadLookupError(Exception):
+  pass
 

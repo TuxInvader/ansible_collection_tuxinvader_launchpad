@@ -1,0 +1,17 @@
+- hosts: localhost
+  become: false
+  collections:
+    - tuxinvader.launchpad
+
+  environment:
+    LP_ACCESS_TOKEN: "{{ secret_access_token }}"
+    LP_ACCESS_SECRET: "{{ secret_access_secret }}"
+
+  tasks:
+
+    - name: Test PPA Info
+      ppa_info:
+        project: ~tuxinvader
+        name: lts-mainline
+        authorize: true
+      

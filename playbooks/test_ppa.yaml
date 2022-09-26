@@ -1,0 +1,29 @@
+- hosts: localhost
+  become: false
+  collections:
+    - tuxinvader.launchpad
+    - community.general
+
+  vars:
+    rand_string: "{{ lookup('community.general.random_string', length=24, special=false) }}"
+
+  environment:
+    LP_ACCESS_TOKEN: "{{ secret_access_token }}"
+    LP_ACCESS_SECRET: "{{ secret_access_secret }}"
+
+  tasks:
+
+    - name: Ensure Random PPA is updated
+      ppa:
+        project: ~tuxinvader
+        name: my-random-ppa
+        displayname: ppa created by launchpadlib
+        description: This has nothing to do with {{ rand_string }}
+        ensure: present
+      
+    - name: Ensure Jammy PPA is removed
+      ppa:
+        project: ~tuxinvader
+        name: jammy-testing-mainline
+        ensure: absent
+      

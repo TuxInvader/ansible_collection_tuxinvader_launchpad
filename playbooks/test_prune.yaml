@@ -9,9 +9,15 @@
 
   tasks:
 
-    - name: Prune PPA to 2 packages
+    - name: Prune mainline PPA to 2 packages
       prune_ppa:
         name: lts-mainline
         project: ~tuxinvader
         max_sources: 2
       
+    - name: Prune mainline-longterm PPA to 4 packages
+      prune_ppa:
+        name: lts-mainline-longterm
+        project: ~tuxinvader
+        max_sources: 4
+
