@@ -15,3 +15,9 @@
         name: lts-mainline
         authorize: true
       
+    - name: Test PPA Info (Jammy)
+      ppa_info:
+        project: ~tuxinvader
+        name: jammy-mainline
+        authorize: false
+      
