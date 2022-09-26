@@ -105,7 +105,7 @@ class LPHandler(object):
     try:
       project = self._get_project(name)
     except LaunchPadLookupError as e:
-      raise Exception(e.msg)
+      raise Exception(e.args)
 
     return self._build_project_result(project)
 
@@ -117,13 +117,14 @@ class LPHandler(object):
       project = self._get_project(project_name)
       ppa = self._get_ppa(project, name)
     except LaunchPadLookupError as e:
-      raise Exception(e.msg)
+      raise Exception(e.args)
 
     return self._build_ppa_result(ppa)
 
   def upsert_ppa(self, project_name, name, ensure, displayname=None, description=None):
     result = { }
     ppa = None
+    changed = False
 
     if self.api_root is None:
       self._login()
@@ -131,7 +132,7 @@ class LPHandler(object):
     try:
       project = self._get_project(project_name)
     except LaunchPadLookupError as e:
-      raise Exception(e.msg)
+      raise Exception(e.args)
 
     try:
       ppa = self._get_ppa(project, name)
@@ -140,10 +141,17 @@ class LPHandler(object):
 
     if ppa is not None:
       if ppa.status == "Active" and ensure.lower() == "absent":
+        changed = True
         ppa.lp_delete()
-      if ppa.displayname != displayname:
-        ppa.displayname = displayname
-        ppa.lp_save()
+      else:
+        if ppa.displayname != displayname:
+          ppa.displayname = displayname
+          changed = True
+        if ppa.description != description:
+          ppa.description = description
+          changed = True
+        if changed:
+          ppa.lp_save()
 
     else:
       if ensure.lower() == "present":
@@ -152,10 +160,11 @@ class LPHandler(object):
     try:
       ppa = self._get_ppa(project, name)
     except LaunchPadLookupError as e:
-      raise Exception(e.msg)
+      raise Exception(e.args)
 
-    return self._build_ppa_result(ppa)
-
+    result['details'] = self._build_ppa_result(ppa)
+    result['changed'] = changed
+    return result
 
   def prune_ppa(self, project, name, max_sources):
     result = { 'pruned': {}, 'count': 0  }
@@ -211,4 +220,5 @@ class ReqTokenCredentials(Credentials):
 
 class LaunchPadLookupError(Exception):
   pass
+
 

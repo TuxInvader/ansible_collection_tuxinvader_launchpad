@@ -111,11 +111,11 @@ def run_module():
 
     try:
       launchpad = LPHandler(True)
-      result['details'] = launchpad.upsert_ppa(module.params['project'], module.params['name'], 
+      result = launchpad.upsert_ppa(module.params['project'], module.params['name'], 
              module.params['ensure'], displayname=module.params['displayname'],
              description=module.params['description'] )
     except Exception as e:
-      module.fail_json(msg=e, **result)
+      module.fail_json(msg=e.args, **result)
 
     module.exit_json(**result)
 
