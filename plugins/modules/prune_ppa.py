@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
 from __future__ import (absolute_import, division, print_function)
+from ansible_collections.tuxinvader.launchpad.plugins.module_utils.lpad import LPHandler
+from ansible.module_utils.basic import AnsibleModule
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -27,7 +29,7 @@ options:
         description: The number of source packages to leave
         required: false
         type: int
-        default 2
+        default: 2
 
 author:
     - Mark Boddington (@TuxInvader)
@@ -59,8 +61,6 @@ pruned:
   sample: { "linux-5.19.10": "2022-09-21T14:28:54.544426+00:00" }
 '''
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.tuxinvader.launchpad.plugins.module_utils.lpad import LPHandler
 
 def run_module():
     # define available arguments/parameters a user can pass to the module
@@ -95,13 +95,14 @@ def run_module():
         module.exit_json(**result)
 
     try:
-      launchpad = LPHandler(True)
-      details = launchpad.prune_ppa(module.params['project'], module.params['name'], module.params['max_sources'])
-      result = {**details, **result}
-      if result['count'] > 0:
-        result['changed'] = True
+        launchpad = LPHandler(True)
+        details = launchpad.prune_ppa(
+            module.params['project'], module.params['name'], module.params['max_sources'])
+        result = {**details, **result}
+        if result['count'] > 0:
+            result['changed'] = True
     except Exception as e:
-      module.fail_json(msg=e, **result)
+        module.fail_json(msg=e, **result)
 
     module.exit_json(**result)
 

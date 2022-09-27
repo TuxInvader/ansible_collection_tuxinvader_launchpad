@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
 from __future__ import (absolute_import, division, print_function)
+from ansible_collections.tuxinvader.launchpad.plugins.module_utils.dput import Dput
+from ansible.module_utils.basic import AnsibleModule
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -44,8 +46,6 @@ count:
     sample: 4
 '''
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.tuxinvader.launchpad.plugins.module_utils.dput import Dput
 
 def run_module():
     # define available arguments/parameters a user can pass to the module
@@ -79,13 +79,14 @@ def run_module():
         module.exit_json(**result)
 
     try:
-      dput = Dput()
-      details = dput.upload(module.params['source_changes'], module.params['ppa'])
-      result = {**details, **result}
-      if result['count'] > 0:
-        result['changed'] = True
+        dput = Dput()
+        details = dput.upload(
+            module.params['source_changes'], module.params['ppa'])
+        result = {**details, **result}
+        if result['count'] > 0:
+            result['changed'] = True
     except Exception as e:
-      module.fail_json(msg=e, **result)
+        module.fail_json(msg=e, **result)
 
     module.exit_json(**result)
 

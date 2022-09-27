@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
 from __future__ import (absolute_import, division, print_function)
+from ansible_collections.tuxinvader.launchpad.plugins.module_utils.lpad import LPHandler
+from ansible.module_utils.basic import AnsibleModule
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -12,7 +14,7 @@ version_added: "1.0.0"
 
 description: This task should be called to get the request token url, and then wait_interactive_login should be called to complete the auth process
 
-options:
+options: []
 
 author:
     - Mark Boddington (@TuxInvader)
@@ -32,7 +34,7 @@ EXAMPLES = r'''
 RETURN = r'''
 # These are examples of possible return values, and in general should use other names for return values.
 authorization_url:
-    description: The authorization url, open in your web browser and authorize the ansible client 
+    description: The authorization url, open in your web browser and authorize the ansible client
     type: str
     returned: always
     sample: 'https://launchpad.net/+authorize?key=askjlaksdj'
@@ -43,14 +45,12 @@ credentials:
     sample: '{"oauth_token": "", "oauth_token_secret": ""}'
 '''
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.common.text.converters import to_native, to_text
-from ansible_collections.tuxinvader.launchpad.plugins.module_utils.lpad import LPHandler
 
 def run_module():
     # define available arguments/parameters a user can pass to the module
     module_args = dict(
-        name=dict(type='str', required=False, default='start_interactive_login'),
+        name=dict(type='str', required=False,
+                  default='start_interactive_login'),
     )
 
     # seed the result dict in the object
@@ -80,13 +80,13 @@ def run_module():
 
     return_msg = ""
     try:
-      launchpad = LPHandler()
-      details = launchpad.start_interactive_login()
-      result['credentials'] = details['credentials']
-      result['authorization_url'] = details['authorization_url']
-      module.log(return_msg)
+        launchpad = LPHandler()
+        details = launchpad.start_interactive_login()
+        result['credentials'] = details['credentials']
+        result['authorization_url'] = details['authorization_url']
+        module.log(return_msg)
     except Exception as e:
-      module.fail_json(msg=e, **result)
+        module.fail_json(msg=e, **result)
 
     module.exit_json(**result)
 

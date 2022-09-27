@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
 from __future__ import (absolute_import, division, print_function)
+from ansible_collections.tuxinvader.launchpad.plugins.module_utils.lpad import LPHandler
+from ansible.module_utils.basic import AnsibleModule
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -53,8 +55,6 @@ message:
     sample: 'goodbye'
 '''
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.tuxinvader.launchpad.plugins.module_utils.lpad import LPHandler
 
 def run_module():
     # define available arguments/parameters a user can pass to the module
@@ -91,10 +91,10 @@ def run_module():
     result['user'] = module.params['name']
 
     try:
-      launchpad = LPHandler(module.params['authorize'])
-      result['details'] = launchpad.get_user_info(module.params['name'])
+        launchpad = LPHandler(module.params['authorize'])
+        result['details'] = launchpad.get_user_info(module.params['name'])
     except Exception as e:
-      module.fail_json(msg=e, **result)
+        module.fail_json(msg=e, **result)
 
     module.exit_json(**result)
 

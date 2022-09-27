@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
 from __future__ import (absolute_import, division, print_function)
+from ansible_collections.tuxinvader.launchpad.plugins.module_utils.lpad import LPHandler
+from ansible.module_utils.basic import AnsibleModule
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -53,20 +55,17 @@ EXAMPLES = r'''
 RETURN = r'''
 # These are examples of possible return values, and in general should use other names for return values.
 LP_ACCESS_TOKEN:
-    description: The Access token for authenticated LP access. Add to your environment.  
+    description: The Access token for authenticated LP access. Add to your environment.
     type: str
     returned: always
     sample: 'TWGbLbMX892jdbffzQF5'
 LP_ACCESS_SECRET:
-    description: The Access token secret for authenticated LP access. Add to your environment.  
+    description: The Access token secret for authenticated LP access. Add to your environment.
     type: str
     returned: always
     sample: 'cFmGdmkXCTjRdfc5pRVvd8933bv8R7pmSkbXbmpPC2Ddkasjdklagp5gK32xK9VlxqPmRcRcnvJskKj7xN'
 '''
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.common.text.converters import to_native, to_text
-from ansible_collections.tuxinvader.launchpad.plugins.module_utils.lpad import LPHandler
 
 def run_module():
     # define available arguments/parameters a user can pass to the module
@@ -99,13 +98,14 @@ def run_module():
         module.exit_json(**result)
 
     try:
-      launchpad = LPHandler()
-      details = launchpad.wait_interactive_login(module.params['credentials'])
-      result = { **details, **result }
-      result['changed'] = True
+        launchpad = LPHandler()
+        details = launchpad.wait_interactive_login(
+            module.params['credentials'])
+        result = {**details, **result}
+        result['changed'] = True
     except Exception as e:
-      module.log( e )
-      module.fail_json(msg="Waiting for Authorization...", **result)
+        module.log(e)
+        module.fail_json(msg="Waiting for Authorization...", **result)
 
     module.exit_json(**result)
 
