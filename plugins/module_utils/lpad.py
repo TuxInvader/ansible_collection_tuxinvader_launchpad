@@ -4,6 +4,7 @@ from launchpadlib.credentials import Credentials, CredentialStore, AuthorizeRequ
 from launchpadlib.launchpad import Launchpad
 import os
 import json
+import re
 
 LP_APP_NAME = 'ansible'
 
@@ -90,16 +91,19 @@ class LPHandler(object):
             raise LaunchPadLookupError("PPA '" + name + "' not found")
         return ppa[0]
 
+    def _build_source_package_result(self, source_package):
+        source_atts = {}
+        for att in source_package.lp_attributes:
+            source_atts[att] = source_package.lp_get_parameter(att)
+        return source_atts
+
     def _build_ppa_result(self, ppa):
         result = {'sources': []}
         for att in ppa.lp_attributes:
             result[att] = ppa.lp_get_parameter(att)
 
         for source in ppa.getPublishedSources(status="Published"):
-            source_atts = {}
-            for att in source.lp_attributes:
-                source_atts[att] = source.lp_get_parameter(att)
-            result['sources'].append(source_atts)
+            result['sources'].append(self._build_source_package_result(source))
 
         return result
 
@@ -189,6 +193,70 @@ class LPHandler(object):
                 package.requestDeletion()
         return result
 
+    def check_source_package(self, project_name, ppa_name, name, version, ensure, match):
+        result = { 'sources': [], 'messages': []}
+        regex = None
+
+        if self.api_root is None:
+            self._login()
+
+        try:
+            project = self._get_project(project_name)
+            ppa = self._get_ppa(project, ppa_name)
+        except LaunchPadLookupError as e:
+            raise Exception(e.args)
+
+        sources = None
+        if match.lower() == "exact":
+            sources = ppa.getPublishedSources(source_name=name)
+        else:
+            sources = ppa.getPublishedSources()
+
+        if match.lower() == "starts_with":
+            regex = r"^%s.*" % name
+        elif match.lower() == "ends_with":
+            regex = r".*%s$" % name
+        elif match.lower() == "contains":
+            regex = r".*%s.*" % name
+        else:
+            regex = r"%s" % name
+
+        for source in sources:
+            if ensure.lower() == "absent":
+                if match.lower() == "exact" and source.source_package_name == name:
+                    if version == '*' or source.source_package_version == version:
+                        if source.status.lower() != "deleted":
+                            source.requestDeletion()
+                            result['changed'] = True
+                        result['sources'].append(self._build_source_package_result(source))
+                    else:
+                        result['message'] = "package found, but version mismatch. %s != %s" % (source.source_package_version, version)
+                else:
+                    regex_result = re.search(regex, source.source_package_name)
+                    if regex_result != None:
+                        if version == '*' or source.source_package_version == version:
+                            if source.status.lower() != "deleted":
+                                source.requestDeletion()
+                                result['changed'] = True
+                            result['sources'].append(self._build_source_package_result(source))
+                            result['messages'].append("regex_matched: %s" % regex_result.group() )
+                        else:
+                            result['messages'].append("package unchanged, version mismatch: '%s', regex: '%s', result: '%s'" % (source.source_package_version, regex, regex_result.group() ))
+            elif ensure.lower() == "present":
+                if match.lower() == "exact" and source.source_package_name == name:
+                    if version == '*' or source.source_package_version == version:
+                        if source.status.lower() == "published":
+                            result['sources'].append(self._build_source_package_result(source))
+                else:
+                    regex_result = re.search(regex, source.source_package_name)
+                    if regex_result != None:
+                        if version == '*' or source.source_package_version == version:
+                            if source.status.lower() == "published":
+                                result['sources'].append(self._build_source_package_result(source))
+            else:
+                raise Exception("Permitted values for 'ensure' are 'present' or 'absent'")
+
+        return result
 
 class EnvCredentialStore(CredentialStore):
 
