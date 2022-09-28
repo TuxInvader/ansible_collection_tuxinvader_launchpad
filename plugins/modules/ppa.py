@@ -42,9 +42,9 @@ options:
         required: false
         default: "A PPA for <name>"
         type: str
-    
+
     source_filter:
-        description: By default we return a list of source_packages which are published, you can choose to remove 
+        description: By default we return a list of source_packages which are published, you can choose to remove
                      the filter by setting this to '*' or to use a different source status. The options for
                      source_status are Pending, Published, Superseded, Deleted or Obsolete
         required: false
@@ -114,8 +114,8 @@ def run_module():
     # for consumption, for example, in a subsequent task
     result = dict(
         changed=False,
-        details = {},
-        sources = []
+        details={},
+        sources=[]
     )
 
     # the AnsibleModule object will be our abstraction working with Ansible
@@ -143,9 +143,9 @@ def run_module():
     try:
         launchpad = LPHandler(True)
         lp_result = launchpad.upsert_ppa(module.params['project'], module.params['name'],
-                                      module.params['ensure'], module.params['source_filter'],
-                                      displayname=module.params['displayname'],
-                                      description=module.params['description'])
+                                         module.params['ensure'], module.params['source_filter'],
+                                         displayname=module.params['displayname'],
+                                         description=module.params['description'])
         result = {**result, **lp_result}
     except Exception as e:
         module.fail_json(msg=e.args, **result)

@@ -12,7 +12,7 @@ module: ppa_info
 short_description: Retrieve facts about a Launchpad PPA
 version_added: "1.0.0"
 
-description: Retrieve facts about a Launchpad PPA and its source_packages. 
+description: Retrieve facts about a Launchpad PPA and its source_packages.
              Facts about the PPA are returned in a dictionary called 'details', and a list of published source_packages
              is returned in a list called 'sources'
 
@@ -30,7 +30,7 @@ options:
         type: str
 
     source_filter:
-        description: By default we return a list of source_packages which are published, you can choose to remove 
+        description: By default we return a list of source_packages which are published, you can choose to remove
                      the filter by setting this to '*' or to use a different source status. The options for
                      source_status are Pending, Published, Superseded, Deleted or Obsolete
         required: false
@@ -111,8 +111,8 @@ def run_module():
     # for consumption, for example, in a subsequent task
     result = dict(
         changed=False,
-        details = {},
-        sources = []
+        details={},
+        sources=[]
     )
 
     # the AnsibleModule object will be our abstraction working with Ansible
@@ -136,7 +136,7 @@ def run_module():
             module.params['project'], module.params['name'], module.params['source_filter'])
         result = {**result, **lp_result}
     except Exception as e:
-        module.fail_json(msg="foo", **result)
+        module.fail_json(msg=e.args, **result)
 
     module.exit_json(**result)
 

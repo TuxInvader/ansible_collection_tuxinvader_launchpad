@@ -176,20 +176,24 @@ def run_module():
 
     try:
         launchpad = LPHandler(True)
-        lp_result = launchpad.check_source_package(module.params['project'], module.params['ppa'], 
-                                      module.params['name'], module.params['version'], 
-                                      module.params['ensure'], module.params['match'])
+        lp_result = launchpad.check_source_package(module.params['project'], module.params['ppa'],
+                                                   module.params['name'], module.params['version'],
+                                                   module.params['ensure'], module.params['match'])
         result = {**result, **lp_result}
         if len(result['sources']) == 0:
             if module.params['ensure'].lower() == 'present':
                 if module.params['source_changes'] != None:
-                    result['messages'].append("No matching sources. Attempting upload")
+                    result['messages'].append(
+                        "No matching sources. Attempting upload")
                     result['changed'] = True
                     dput = Dput()
-                    ppa_name = "%s/%s" % (module.params['project'], module.params['ppa'])
-                    result['dput'] = dput.upload(module.params['source_changes'], ppa_name)
+                    ppa_name = "%s/%s" % (module.params['project'],
+                                          module.params['ppa'])
+                    result['dput'] = dput.upload(
+                        module.params['source_changes'], ppa_name)
                 else:
-                    module.fail_json(msg="FAIL - The source package is not present on PPA and we have no source_changes file to upload", **result)
+                    module.fail_json(
+                        msg="FAIL - The source package is not present on PPA and we have no source_changes file to upload", **result)
     except Exception as e:
         module.fail_json(msg=e.args, **result)
 

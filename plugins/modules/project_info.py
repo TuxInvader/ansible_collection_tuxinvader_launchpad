@@ -22,7 +22,7 @@ options:
         type: str
 
     ppa_filter:
-        description: By default we return a list of PPAs which are Active, you can choose to remove 
+        description: By default we return a list of PPAs which are Active, you can choose to remove
                      the filter by setting this to '*' or to 'Deleted' if you want deleted PPAs only
         required: false
         default: Active
@@ -69,7 +69,7 @@ ppas:
   returned: always
   sample: [ { "authorized_size": 2048, "build_debug_symbols": false, "description": "Ubuntu mainline kernels",
             "displayname": "lts-mainline", "external_dependencies": null,
-            "http_etag": "\"cannnnnnnnnnnnnnnnna86c10-0d4e6e732nnnnnnnnnnnnnnnnnnd\"", "name": "lts-mainline", 
+            "http_etag": "\"cannnnnnnnnnnnnnnnna86c10-0d4e6e732nnnnnnnnnnnnnnnnnnd\"", "name": "lts-mainline",
             "permit_obsolete_series_uploads": false, "private": false, "publish": true,
             "publish_debug_symbols": false, "reference": "~tuxinvader/ubuntu/lts-mainline", "relative_build_score": 0,
             "require_virtualized": true, "resource_type_link": "https://api.launchpad.net/devel/#archive",

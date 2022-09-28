@@ -59,7 +59,7 @@ class LPHandler(object):
         return result
 
     def get_user_info(self, name):
-        result = {'details':{}}
+        result = {'details': {}}
         if self.api_root is None:
             self._login()
         people = self.api_root.people
@@ -76,11 +76,12 @@ class LPHandler(object):
 
     def _build_project_result(self, project, ppa_filter):
         result = {'details': {}, 'ppas': []}
-        
+
         ppa_filter = ppa_filter.capitalize()
-        ppa_list = ['*', 'Active','Deleted']
+        ppa_list = ['*', 'Active', 'Deleted']
         if ppa_filter not in ppa_list:
-            raise Exception( to_text("status_filter should be one of %s" % str(ppa_list)) )
+            raise Exception(
+                to_text("status_filter should be one of %s" % str(ppa_list)))
 
         for att in project.lp_attributes:
             result['details'][att] = project.lp_get_parameter(att)
@@ -110,16 +111,20 @@ class LPHandler(object):
             result['details'][att] = ppa.lp_get_parameter(att)
 
         status_filter = status_filter.capitalize()
-        status_list = ['*', 'Pending','Published','Superseded', 'Deleted', 'Obsolete']
+        status_list = ['*', 'Pending', 'Published',
+                       'Superseded', 'Deleted', 'Obsolete']
         if status_filter not in status_list:
-            raise Exception("status_filter should be one of %s" % str(status_list))
+            raise Exception("status_filter should be one of %s" %
+                            str(status_list))
 
         if status_filter == '*':
             for source in ppa.getPublishedSources():
-                result['sources'].append(self._build_source_package_result(source))
+                result['sources'].append(
+                    self._build_source_package_result(source))
         else:
             for source in ppa.getPublishedSources(status=status_filter):
-                result['sources'].append(self._build_source_package_result(source))
+                result['sources'].append(
+                    self._build_source_package_result(source))
 
         return result
 
@@ -187,7 +192,7 @@ class LPHandler(object):
             ppa = self._get_ppa(project, name)
         except LaunchPadLookupError as e:
             if ensure.lower() == "absent":
-                return { 'details': {}, 'sources': [] }
+                return {'details': {}, 'sources': []}
             raise Exception(e.args)
 
         result = self._build_ppa_result(ppa, source_filter)
@@ -216,7 +221,7 @@ class LPHandler(object):
         return result
 
     def check_source_package(self, project_name, ppa_name, name, version, ensure, match):
-        result = { 'sources': [], 'messages': []}
+        result = {'sources': [], 'messages': []}
         regex = None
 
         if self.api_root is None:
@@ -250,35 +255,44 @@ class LPHandler(object):
                         if source.status.lower() != "deleted":
                             source.requestDeletion()
                             result['changed'] = True
-                        result['sources'].append(self._build_source_package_result(source))
+                        result['sources'].append(
+                            self._build_source_package_result(source))
                     else:
-                        result['message'] = "package found, but version mismatch. %s != %s" % (source.source_package_version, version)
+                        result['message'] = "package found, but version mismatch. %s != %s" % (
+                            source.source_package_version, version)
                 else:
                     regex_result = re.search(regex, source.source_package_name)
-                    if regex_result != None:
+                    if regex_result is not None:
                         if version == '*' or source.source_package_version == version:
                             if source.status.lower() != "deleted":
                                 source.requestDeletion()
                                 result['changed'] = True
-                            result['sources'].append(self._build_source_package_result(source))
-                            result['messages'].append("regex_matched: %s" % regex_result.group() )
+                            result['sources'].append(
+                                self._build_source_package_result(source))
+                            result['messages'].append(
+                                "regex_matched: %s" % regex_result.group())
                         else:
-                            result['messages'].append("package unchanged, version mismatch: '%s' not '%s', regex: '%s', result: '%s'" % (source.source_package_version, version, regex, regex_result.group() ))
+                            result['messages'].append("package unchanged, version mismatch: '%s' not '%s', regex: '%s', result: '%s'" % (
+                                source.source_package_version, version, regex, regex_result.group()))
             elif ensure.lower() == "present":
                 if match.lower() == "exact" and source.source_package_name == name:
                     if version == '*' or source.source_package_version == version:
                         if source.status.lower() == "published":
-                            result['sources'].append(self._build_source_package_result(source))
+                            result['sources'].append(
+                                self._build_source_package_result(source))
                 else:
                     regex_result = re.search(regex, source.source_package_name)
                     if regex_result != None:
                         if version == '*' or source.source_package_version == version:
                             if source.status.lower() == "published":
-                                result['sources'].append(self._build_source_package_result(source))
+                                result['sources'].append(
+                                    self._build_source_package_result(source))
             else:
-                raise Exception("Permitted values for 'ensure' are 'present' or 'absent'")
+                raise Exception(
+                    "Permitted values for 'ensure' are 'present' or 'absent'")
 
         return result
+
 
 class EnvCredentialStore(CredentialStore):
 
