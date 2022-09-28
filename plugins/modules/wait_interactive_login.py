@@ -57,12 +57,12 @@ RETURN = r'''
 LP_ACCESS_TOKEN:
     description: The Access token for authenticated LP access. Add to your environment.
     type: str
-    returned: always
+    returned: changed
     sample: 'TWGbLbMX892jdbffzQF5'
 LP_ACCESS_SECRET:
     description: The Access token secret for authenticated LP access. Add to your environment.
     type: str
-    returned: always
+    returned: changed
     sample: 'cFmGdmkXCTjRdfc5pRVvd8933bv8R7pmSkbXbmpPC2Ddkasjdklagp5gK32xK9VlxqPmRcRcnvJskKj7xN'
 '''
 

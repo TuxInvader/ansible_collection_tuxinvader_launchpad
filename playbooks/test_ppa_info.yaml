@@ -12,12 +12,13 @@
     - name: Test PPA Info
       ppa_info:
         project: ~tuxinvader
-        name: lts-mainline
+        name: jammy-mainline
         authorize: true
       
-    - name: Test PPA Info (Jammy)
+    - name: Test PPA Info (random)
       ppa_info:
         project: ~tuxinvader
-        name: jammy-mainline
+        name: my-random-ppa
+        source_filter: '*'
         authorize: false
       

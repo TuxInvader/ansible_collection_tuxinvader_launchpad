@@ -96,13 +96,13 @@ def run_module():
 
     try:
         launchpad = LPHandler(True)
-        details = launchpad.prune_ppa(
+        lp_result = launchpad.prune_ppa(
             module.params['project'], module.params['name'], module.params['max_sources'])
-        result = {**details, **result}
+        result = {**result, **lp_result}
         if result['count'] > 0:
             result['changed'] = True
     except Exception as e:
-        module.fail_json(msg=e, **result)
+        module.fail_json(msg=e.args, **result)
 
     module.exit_json(**result)
 

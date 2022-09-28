@@ -8,16 +8,11 @@
     LP_ACCESS_SECRET: "{{ secret_access_secret }}"
 
   tasks:
-
-    - name: Prune mainline PPA to 2 packages
+      
+    - name: Prune my-random PPA to 2 packages
       prune_ppa:
-        name: lts-mainline
+        name: my-random-ppa
         project: ~tuxinvader
         max_sources: 2
-      
-    - name: Prune mainline-longterm PPA to 4 packages
-      prune_ppa:
-        name: lts-mainline-longterm
-        project: ~tuxinvader
-        max_sources: 4
+
 

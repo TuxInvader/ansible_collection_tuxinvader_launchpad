@@ -59,13 +59,13 @@ class LPHandler(object):
         return result
 
     def get_user_info(self, name):
-        result = {}
+        result = {'details':{}}
         if self.api_root is None:
             self._login()
         people = self.api_root.people
         for person in people.find(text=name):
             for att in person.lp_attributes:
-                result[att] = person.lp_get_parameter(att)
+                result['details'][att] = person.lp_get_parameter(att)
         return result
 
     def _get_project(self, name):
@@ -74,15 +74,22 @@ class LPHandler(object):
             raise LaunchPadLookupError("Project '" + name + "' not found")
         return project
 
-    def _build_project_result(self, project):
-        result = {'ppas': []}
+    def _build_project_result(self, project, ppa_filter):
+        result = {'details': {}, 'ppas': []}
+        
+        ppa_filter = ppa_filter.capitalize()
+        ppa_list = ['*', 'Active','Deleted']
+        if ppa_filter not in ppa_list:
+            raise Exception( to_text("status_filter should be one of %s" % str(ppa_list)) )
+
         for att in project.lp_attributes:
-            result[att] = project.lp_get_parameter(att)
+            result['details'][att] = project.lp_get_parameter(att)
         for ppa in project.ppas:
             ppa_atts = {}
-            for att in ppa.lp_attributes:
-                ppa_atts[att] = ppa.lp_get_parameter(att)
-            result['ppas'].append(ppa_atts)
+            if ppa_filter == '*' or ppa_filter == ppa.status:
+                for att in ppa.lp_attributes:
+                    ppa_atts[att] = ppa.lp_get_parameter(att)
+                result['ppas'].append(ppa_atts)
         return result
 
     def _get_ppa(self, project, name):
@@ -97,17 +104,26 @@ class LPHandler(object):
             source_atts[att] = source_package.lp_get_parameter(att)
         return source_atts
 
-    def _build_ppa_result(self, ppa):
-        result = {'sources': []}
+    def _build_ppa_result(self, ppa, status_filter):
+        result = {'details': {}, 'sources': []}
         for att in ppa.lp_attributes:
-            result[att] = ppa.lp_get_parameter(att)
+            result['details'][att] = ppa.lp_get_parameter(att)
 
-        for source in ppa.getPublishedSources(status="Published"):
-            result['sources'].append(self._build_source_package_result(source))
+        status_filter = status_filter.capitalize()
+        status_list = ['*', 'Pending','Published','Superseded', 'Deleted', 'Obsolete']
+        if status_filter not in status_list:
+            raise Exception("status_filter should be one of %s" % str(status_list))
+
+        if status_filter == '*':
+            for source in ppa.getPublishedSources():
+                result['sources'].append(self._build_source_package_result(source))
+        else:
+            for source in ppa.getPublishedSources(status=status_filter):
+                result['sources'].append(self._build_source_package_result(source))
 
         return result
 
-    def get_project_info(self, name, status=None):
+    def get_project_info(self, name, status_filter=None):
         if self.api_root is None:
             self._login()
 
@@ -116,9 +132,9 @@ class LPHandler(object):
         except LaunchPadLookupError as e:
             raise Exception(e.args)
 
-        return self._build_project_result(project)
+        return self._build_project_result(project, status_filter)
 
-    def get_ppa_info(self, project_name, name):
+    def get_ppa_info(self, project_name, name, source_filter):
         if self.api_root is None:
             self._login()
 
@@ -128,9 +144,9 @@ class LPHandler(object):
         except LaunchPadLookupError as e:
             raise Exception(e.args)
 
-        return self._build_ppa_result(ppa)
+        return self._build_ppa_result(ppa, source_filter)
 
-    def upsert_ppa(self, project_name, name, ensure, displayname=None, description=None):
+    def upsert_ppa(self, project_name, name, ensure, source_filter, displayname=None, description=None):
         result = {}
         ppa = None
         changed = False
@@ -170,20 +186,26 @@ class LPHandler(object):
         try:
             ppa = self._get_ppa(project, name)
         except LaunchPadLookupError as e:
+            if ensure.lower() == "absent":
+                return { 'details': {}, 'sources': [] }
             raise Exception(e.args)
 
-        result['details'] = self._build_ppa_result(ppa)
+        result = self._build_ppa_result(ppa, source_filter)
         result['changed'] = changed
         return result
 
-    def prune_ppa(self, project, name, max_sources):
+    def prune_ppa(self, project_name, name, max_sources):
         result = {'pruned': {}, 'count': 0}
         if self.api_root is None:
             self._login()
 
-        project = self.api_root.projects[project]
-        lp_ppa = list(filter(lambda x: x.name == name, project.ppas))[0]
-        pb = lp_ppa.getPublishedSources(status="Published")
+        try:
+            project = self._get_project(project_name)
+            ppa = self._get_ppa(project, name)
+        except LaunchPadLookupError as e:
+            raise Exception(e.args)
+
+        pb = ppa.getPublishedSources(status="Published")
 
         if pb.total_size > max_sources:
             ascpkgs = sorted(pb, key=lambda x: x.date_published)
@@ -241,7 +263,7 @@ class LPHandler(object):
                             result['sources'].append(self._build_source_package_result(source))
                             result['messages'].append("regex_matched: %s" % regex_result.group() )
                         else:
-                            result['messages'].append("package unchanged, version mismatch: '%s', regex: '%s', result: '%s'" % (source.source_package_version, regex, regex_result.group() ))
+                            result['messages'].append("package unchanged, version mismatch: '%s' not '%s', regex: '%s', result: '%s'" % (source.source_package_version, version, regex, regex_result.group() ))
             elif ensure.lower() == "present":
                 if match.lower() == "exact" and source.source_package_name == name:
                     if version == '*' or source.source_package_version == version:

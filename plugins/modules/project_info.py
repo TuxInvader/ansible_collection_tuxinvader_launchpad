@@ -17,7 +17,15 @@ description: Retrieve facts about a Launchpad project and its PPAs
 options:
     name:
         description: The name of the project to retrieve
+        default: None
         required: true
+        type: str
+
+    ppa_filter:
+        description: By default we return a list of PPAs which are Active, you can choose to remove 
+                     the filter by setting this to '*' or to 'Deleted' if you want deleted PPAs only
+        required: false
+        default: Active
         type: str
 
     authorize:
@@ -44,10 +52,31 @@ EXAMPLES = r'''
 RETURN = r'''
 # Returns a dictionary containing project and ppa information
 details:
-    description: The project information
-    type: dict
-    returned: always
-    sample: {}
+  description: Facts about the Project
+  type: dict
+  returned: always
+  sample: { "account_status": "Active", "account_status_history": "tag:launchpad.net:2008:redacted", "date_created": "2006-05-21T14:19:54.712320+00:00",
+        "description": "https://github.com/TuxInvader", "display_name": "TuxInvader", "hide_email_addresses": true, "homepage_content": null,
+        "http_etag": "\"fnnnnnnnnnnnnnnnnnne83c-5f07fb80393dnnnnnnnnnnnnnnn23d42ff\"", "is_probationary": true,
+        "is_team": false, "is_ubuntu_coc_signer": true, "is_valid": true, "karma": 0, "mailing_list_auto_subscribe_policy": "Ask me when I join a team",
+        "name": "tuxinvader", "private": false, "resource_type_link": "https://api.launchpad.net/devel/#person",
+        "self_link": "https://api.launchpad.net/devel/~tuxinvader", "time_zone": "Europe/London", "visibility": "Public",
+        "web_link": "https://launchpad.net/~tuxinvader" }
+
+ppas:
+  description: List of PPAs owned by this project
+  type: list
+  returned: always
+  sample: [ { "authorized_size": 2048, "build_debug_symbols": false, "description": "Ubuntu mainline kernels",
+            "displayname": "lts-mainline", "external_dependencies": null,
+            "http_etag": "\"cannnnnnnnnnnnnnnnna86c10-0d4e6e732nnnnnnnnnnnnnnnnnnd\"", "name": "lts-mainline", 
+            "permit_obsolete_series_uploads": false, "private": false, "publish": true,
+            "publish_debug_symbols": false, "reference": "~tuxinvader/ubuntu/lts-mainline", "relative_build_score": 0,
+            "require_virtualized": true, "resource_type_link": "https://api.launchpad.net/devel/#archive",
+            "self_link": "https://api.launchpad.net/devel/~tuxinvader/+archive/ubuntu/lts-mainline",
+            "signing_key_fingerprint": "A132D7D22655C81961EDEA823844A6C1C6FD1056", "status": "Active",
+            "suppress_subscription_notifications": false,
+            "web_link": "https://launchpad.net/~tuxinvader/+archive/ubuntu/lts-mainline"  }  ]
 '''
 
 
@@ -55,6 +84,7 @@ def run_module():
     # define available arguments/parameters a user can pass to the module
     module_args = dict(
         name=dict(type='str', required=True),
+        ppa_filter=dict(type='str', required=False, default="Active"),
         authorize=dict(type='bool', required=False, default=False)
     )
 
@@ -65,6 +95,8 @@ def run_module():
     # for consumption, for example, in a subsequent task
     result = dict(
         changed=False,
+        details={},
+        ppas=[]
     )
 
     # the AnsibleModule object will be our abstraction working with Ansible
@@ -84,9 +116,10 @@ def run_module():
 
     try:
         launchpad = LPHandler(module.params['authorize'])
-        result['details'] = launchpad.get_project_info(module.params['name'])
+        lp_result = launchpad.get_project_info(module.params['name'], module.params['ppa_filter'])
+        result = {**result, **lp_result}
     except Exception as e:
-        module.fail_json(msg=e, **result)
+        module.fail_json(msg=e.args, **result)
 
     module.exit_json(**result)
 

@@ -7,6 +7,6 @@
 
     - name: Upload Kernel packages to PPA
       ppa_upload_package:
-        source_changes: /usr/local/src/cod/debs/v5.15.70/linux-generic-5.15_5.15.70_source.changes
-        ppa: ~tuxinvader/lts-mainline-longterm
+        source_changes: /usr/local/src/cod/debs/v5.15.71/linux-generic-5.15_5.15.71_source.changes
+        ppa: ~tuxinvader/my-random-ppa
       

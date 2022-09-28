@@ -70,7 +70,8 @@ def run_module():
     # for consumption, for example, in a subsequent task
     result = dict(
         changed=False,
-        user=''
+        user='',
+        details={}
     )
 
     # the AnsibleModule object will be our abstraction working with Ansible
@@ -92,9 +93,10 @@ def run_module():
 
     try:
         launchpad = LPHandler(module.params['authorize'])
-        result['details'] = launchpad.get_user_info(module.params['name'])
+        lp_result = launchpad.get_user_info(module.params['name'])
+        result = {**result, **lp_result}
     except Exception as e:
-        module.fail_json(msg=e, **result)
+        module.fail_json(msg=e.args, **result)
 
     module.exit_json(**result)
 

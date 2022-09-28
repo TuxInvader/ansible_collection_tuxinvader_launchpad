@@ -60,6 +60,7 @@ def run_module():
     # for consumption, for example, in a subsequent task
     result = dict(
         changed=False,
+        credentials='',
         authorization_url=''
     )
 
@@ -78,15 +79,14 @@ def run_module():
     if module.check_mode:
         module.exit_json(**result)
 
-    return_msg = ""
+    return_msg = "foo bar"
     try:
         launchpad = LPHandler()
-        details = launchpad.start_interactive_login()
-        result['credentials'] = details['credentials']
-        result['authorization_url'] = details['authorization_url']
+        lp_result = launchpad.start_interactive_login()
+        result = {**result, **lp_result}
         module.log(return_msg)
     except Exception as e:
-        module.fail_json(msg=e, **result)
+        module.fail_json(msg=e.args, **result)
 
     module.exit_json(**result)
 

@@ -18,11 +18,11 @@
         match: starts_with
         ensure: absent
 
-    - name: Ensure kernel 5.15.70 is added
+    - name: Ensure kernel 5.19.12 is added
       source_package:
         project: ~tuxinvader
         ppa: my-random-ppa
-        name: linux-generic-5.19
-        version: "5.19.11"
+        name: linux-5.19.12
+        version: 5.19.12-051912.202209281927
         ensure: present
-        #source_changes: /usr/local/src/cod/debs/v5.19.11/linux-generic-5.19_5.19.11_source.changes
+        source_changes: /usr/local/src/cod/debs/v5.19.12/linux-5.19.12_5.19.12-051912.202209281927_source.changes

@@ -42,6 +42,14 @@ options:
         required: false
         default: "A PPA for <name>"
         type: str
+    
+    source_filter:
+        description: By default we return a list of source_packages which are published, you can choose to remove 
+                     the filter by setting this to '*' or to use a different source status. The options for
+                     source_status are Pending, Published, Superseded, Deleted or Obsolete
+        required: false
+        default: Published
+        type: str
 
 author:
     - Mark Boddington (@TuxInvader)
@@ -60,12 +68,31 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
-# Returns a dictionary containing ppa information and its source packages
+# returns
 details:
-    description: The PPA information
-    type: dict
-    returned: always
-    sample: {}
+  description: Facts about the PPA
+  type: dict
+  returned: always
+  sample: { "authorized_size": 2048, "build_debug_symbols": false, "description": "PPA for LTS foo", "displayname": "foo", "external_dependencies": null,
+        "http_etag": "\"70d6b91de3d852e1bd3dbb07a6391a3342fdnnnnnnnnnnnnnnnnnnnnn\"", "name": "foo", "permit_obsolete_series_uploads": false,
+        "private": false, "publish": true, "publish_debug_symbols": false, "reference": "~project/ubuntu/foo", "relative_build_score": 0,
+        "require_virtualized": true, "resource_type_link": "https://api.launchpad.net/devel/#archive",
+        "self_link": "https://api.launchpad.net/devel/~project/+archive/ubuntu/foo", "signing_key_fingerprint": "Annnnnnn655C819nnnnnn23844A6C1nnnnn6",
+        "status": "Active", "suppress_subscription_notifications": false, "web_link": "https://launchpad.net/~project/+archive/ubuntu/foo" }
+
+sources:
+  description: List of source_packages published in this PPA
+  type: list
+  returned: always
+  sample: [ { "component_name": "main", "date_created": "2022-09-27T10:02:08.870234+00:00", "date_made_pending": null,
+                "date_published": "2022-09-27T10:33:30.086025+00:00", "date_removed": null, "date_superseded": null,
+                "display_name": "linux-5.19.11 5.19.11-051911.202209270958 in jammy",
+                "http_etag": "\"nnnnnnnnnnnnnnnnnnnnnnnnnnnn-nnnnnnnnnnnnnnnnnnnnn\"", "pocket": "Release",
+                "removal_comment": null, "resource_type_link": "https://api.launchpad.net/devel/#source_package_publishing_history",
+                "scheduled_deletion_date": null, "section_name": "devel",
+                "self_link": "https://api.launchpad.net/devel/~project/+archive/ubuntu/foo/+sourcepub/nnnnnnn",
+                "source_package_name": "linux-5.19.11", "source_package_version": "5.19.11-051911.202209270958", "status": "Published"
+            } ]
 '''
 
 
@@ -76,7 +103,8 @@ def run_module():
         project=dict(type='str', required=True),
         ensure=dict(type='str', required=False, default="present"),
         displayname=dict(type='str', required=False, default=None),
-        description=dict(type='str', required=False, default=None)
+        description=dict(type='str', required=False, default=None),
+        source_filter=dict(type='str', required=False, default='Published')
     )
 
     # seed the result dict in the object
@@ -86,6 +114,8 @@ def run_module():
     # for consumption, for example, in a subsequent task
     result = dict(
         changed=False,
+        details = {},
+        sources = []
     )
 
     # the AnsibleModule object will be our abstraction working with Ansible
@@ -112,9 +142,11 @@ def run_module():
 
     try:
         launchpad = LPHandler(True)
-        result = launchpad.upsert_ppa(module.params['project'], module.params['name'],
-                                      module.params['ensure'], displayname=module.params['displayname'],
+        lp_result = launchpad.upsert_ppa(module.params['project'], module.params['name'],
+                                      module.params['ensure'], module.params['source_filter'],
+                                      displayname=module.params['displayname'],
                                       description=module.params['description'])
+        result = {**result, **lp_result}
     except Exception as e:
         module.fail_json(msg=e.args, **result)
 

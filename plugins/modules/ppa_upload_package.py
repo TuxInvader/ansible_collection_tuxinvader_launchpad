@@ -44,6 +44,17 @@ count:
     type: int
     returned: always
     sample: 4
+uploads:
+    description: The filenames of the uploaded files
+    type: list
+    returned: always
+    sample: [
+        "linux-generic-5.15_5.15.71_source.changes",
+        "linux-generic-5.15_5.15.71.dsc",
+        "linux-generic-5.15_5.15.71.orig.tar.gz",
+        "linux-generic-5.15_5.15.71.debian.tar.xz",
+        "linux-generic-5.15_5.15.71_source.buildinfo"
+    ]
 '''
 
 
@@ -60,6 +71,8 @@ def run_module():
     # state will include any data that you want your module to pass back
     # for consumption, for example, in a subsequent task
     result = dict(
+        count=0,
+        uploads=[],
         changed=False,
     )
 
@@ -80,13 +93,13 @@ def run_module():
 
     try:
         dput = Dput()
-        details = dput.upload(
+        dput_result = dput.upload(
             module.params['source_changes'], module.params['ppa'])
-        result = {**details, **result}
+        result = {**result, **dput_result}
         if result['count'] > 0:
             result['changed'] = True
     except Exception as e:
-        module.fail_json(msg=e, **result)
+        module.fail_json(msg=e.args, **result)
 
     module.exit_json(**result)
 
