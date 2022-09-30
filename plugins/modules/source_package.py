@@ -3,7 +3,6 @@
 from __future__ import (absolute_import, division, print_function)
 from ansible_collections.tuxinvader.launchpad.plugins.module_utils.lpad import LPHandler
 from ansible_collections.tuxinvader.launchpad.plugins.module_utils.dput import Dput
-import os
 from ansible.module_utils.basic import AnsibleModule
 
 __metaclass__ = type
@@ -183,7 +182,7 @@ def run_module():
         result = {**result, **lp_result}
         if len(result['sources']) == 0:
             if module.params['ensure'].lower() == 'present':
-                if module.params['source_changes'] != None:
+                if module.params['source_changes'] is not None:
                     result['messages'].append(
                         "No matching sources. Attempting upload")
                     result['changed'] = True

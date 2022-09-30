@@ -1,10 +1,7 @@
 #!/usr/bin/python
 
 from __future__ import (absolute_import, division, print_function)
-from email.policy import default
-from typing_extensions import Required
 from ansible_collections.tuxinvader.launchpad.plugins.module_utils.lpad import LPHandler
-from ansible_collections.tuxinvader.launchpad.plugins.module_utils.dput import Dput
 from ansible.module_utils.basic import AnsibleModule
 import os
 

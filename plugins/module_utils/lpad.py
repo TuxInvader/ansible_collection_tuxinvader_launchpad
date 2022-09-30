@@ -281,7 +281,7 @@ class LPHandler(object):
                                 self._build_entry_result(source))
                 else:
                     regex_result = re.search(regex, source.source_package_name)
-                    if regex_result != None:
+                    if regex_result is not None:
                         if version == '*' or source.source_package_version == version:
                             if source.status.lower() == "published":
                                 result['sources'].append(
