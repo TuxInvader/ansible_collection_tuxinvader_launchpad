@@ -130,7 +130,7 @@ Get information about a user
     - name: Test User Info
       user_info:
         name: tuxinvader
-      register tux
+      register: tux
 ```
 
 ## Retrieve project information
