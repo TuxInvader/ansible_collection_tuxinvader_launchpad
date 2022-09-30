@@ -130,7 +130,6 @@ Get information about a user
     - name: Test User Info
       user_info:
         name: tuxinvader
-        authorize: no
       register tux
 ```
 
@@ -153,7 +152,6 @@ Get project information, including a list of owned PPAs
     - name: Test Project Info
       project_info:
         name: ~tuxinvader
-        authorize: true
 
 ```
 
