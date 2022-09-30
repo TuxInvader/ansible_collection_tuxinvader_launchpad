@@ -23,11 +23,9 @@ class LPHandler(object):
         self._authorize = authorize
         if authorize:
             if os.environ.get('LP_ACCESS_TOKEN') is None:
-                raise Exception(to_text(
-                    "You need to set 'LP_ACCESS_TOKEN' and 'LP_ACCESS_SECRET' environment variables"))
+                raise Exception("You need to set 'LP_ACCESS_TOKEN' and 'LP_ACCESS_SECRET' environment variables")
             if os.environ.get('LP_ACCESS_SECRET') is None:
-                raise Exception(to_text(
-                    "You need to set 'LP_ACCESS_TOKEN' and 'LP_ACCESS_SECRET' environment variables"))
+                raise Exception("You need to set 'LP_ACCESS_TOKEN' and 'LP_ACCESS_SECRET' environment variables")
             self._credStore = EnvCredentialStore(consumer)
             self._credentials = self._credStore.load(consumer)
 
