@@ -17,7 +17,7 @@
       ppa:
         project: ~tuxinvader
         name: my-random-ppa
-        displayname: ppa created by launchpadlib
+        displayname: ppa for random testingses
         description: This has nothing to do with {{ rand_string }}
         ensure: present
       

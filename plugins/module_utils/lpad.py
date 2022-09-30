@@ -184,6 +184,7 @@ class LPHandler(object):
 
         else:
             if ensure.lower() == "present":
+                changed = True
                 project.createPPA(
                     name=name, displayname=displayname, description=description)
 
