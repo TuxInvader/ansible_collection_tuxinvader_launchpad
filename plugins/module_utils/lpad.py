@@ -2,6 +2,7 @@ from __future__ import (absolute_import, division, print_function)
 from ansible.module_utils.common.text.converters import to_text
 from launchpadlib.credentials import Credentials, CredentialStore, AuthorizeRequestTokenWithURL, AccessToken
 from launchpadlib.launchpad import Launchpad
+from datetime import datetime, timedelta, timezone
 import os
 import json
 import re
@@ -99,7 +100,7 @@ class LPHandler(object):
             raise LaunchPadLookupError("PPA '" + name + "' not found")
         return ppa[0]
 
-    def _build_source_package_result(self, source_package):
+    def _build_entry_result(self, source_package):
         source_atts = {}
         for att in source_package.lp_attributes:
             source_atts[att] = source_package.lp_get_parameter(att)
@@ -120,11 +121,11 @@ class LPHandler(object):
         if status_filter == '*':
             for source in ppa.getPublishedSources():
                 result['sources'].append(
-                    self._build_source_package_result(source))
+                    self._build_entry_result(source))
         else:
             for source in ppa.getPublishedSources(status=status_filter):
                 result['sources'].append(
-                    self._build_source_package_result(source))
+                    self._build_entry_result(source))
 
         return result
 
@@ -256,7 +257,7 @@ class LPHandler(object):
                             source.requestDeletion()
                             result['changed'] = True
                         result['sources'].append(
-                            self._build_source_package_result(source))
+                            self._build_entry_result(source))
                     else:
                         result['message'] = "package found, but version mismatch. %s != %s" % (
                             source.source_package_version, version)
@@ -268,7 +269,7 @@ class LPHandler(object):
                                 source.requestDeletion()
                                 result['changed'] = True
                             result['sources'].append(
-                                self._build_source_package_result(source))
+                                self._build_entry_result(source))
                             result['messages'].append(
                                 "regex_matched: %s" % regex_result.group())
                         else:
@@ -279,18 +280,57 @@ class LPHandler(object):
                     if version == '*' or source.source_package_version == version:
                         if source.status.lower() == "published":
                             result['sources'].append(
-                                self._build_source_package_result(source))
+                                self._build_entry_result(source))
                 else:
                     regex_result = re.search(regex, source.source_package_name)
                     if regex_result != None:
                         if version == '*' or source.source_package_version == version:
                             if source.status.lower() == "published":
                                 result['sources'].append(
-                                    self._build_source_package_result(source))
+                                    self._build_entry_result(source))
             else:
                 raise Exception(
                     "Permitted values for 'ensure' are 'present' or 'absent'")
 
+        return result
+
+    def _check_recency(self, time_frame, entry_time):
+        max_delta = datetime.now(tz=timezone(timedelta(0))) - timedelta(minutes=time_frame)
+        if max_delta > entry_time:
+            return False
+        return True
+
+    def get_build_record_info(self, project_name, ppa_name, source_name, source_version, build_id, time_frame):
+        result={'records': []}
+        if self.api_root is None:
+            self._login()
+
+        try:
+            project = self._get_project(project_name)
+            ppa = self._get_ppa(project, ppa_name)
+        except LaunchPadLookupError as e:
+            raise Exception(e.args)
+        
+        brs = None
+        if source_name is not None:
+            brs = ppa.getBuildRecords( source_name=source_name )
+        else:
+            brs= ppa.getBuildRecords()
+
+        for br in brs:
+            if build_id is not None:
+                if br.self_link.endswith(str(build_id)):
+                    result['records'].append(self._build_entry_result(br))
+                    return result
+            else:
+                if source_version is not None:
+                    if br.source_package_version == source_version:
+                        if self._check_recency(time_frame, br.datecreated):
+                            result['records'].append(self._build_entry_result(br))
+                else:
+                    if self._check_recency(time_frame, br.datecreated):
+                        result['records'].append(self._build_entry_result(br))
+        
         return result
 
 
