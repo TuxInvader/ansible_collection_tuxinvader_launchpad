@@ -171,10 +171,9 @@ def run_module():
         if os.environ.get('LP_ACCESS_TOKEN') is not None:
             auth = True
         launchpad = LPHandler(auth)
-
         lp_result = launchpad.get_build_record_info(module.params['project'], module.params['ppa'],
-                                                   module.params['source_name'], module.params['source_version'],
-                                                   module.params['build_id'], module.params['time_frame'])
+                                                    module.params['source_name'], module.params['source_version'],
+                                                    module.params['build_id'], module.params['time_frame'])
         result = {**result, **lp_result}
     except Exception as e:
         module.fail_json(msg=e.args, **result)

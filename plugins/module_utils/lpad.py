@@ -24,10 +24,10 @@ class LPHandler(object):
         if authorize:
             if os.environ.get('LP_ACCESS_TOKEN') is None:
                 raise Exception(to_text(
-                    "You need to set 'LP_ACCESS_TOKEN' and 'LP_ACCESS_SECRET' environment variables when 'authorize' is 'true'"))
+                    "You need to set 'LP_ACCESS_TOKEN' and 'LP_ACCESS_SECRET' environment variables"))
             if os.environ.get('LP_ACCESS_SECRET') is None:
                 raise Exception(to_text(
-                    "You need to set 'LP_ACCESS_TOKEN' and 'LP_ACCESS_SECRET' environment variables when 'authorize' is 'true'"))
+                    "You need to set 'LP_ACCESS_TOKEN' and 'LP_ACCESS_SECRET' environment variables"))
             self._credStore = EnvCredentialStore(consumer)
             self._credentials = self._credStore.load(consumer)
 
@@ -295,13 +295,14 @@ class LPHandler(object):
         return result
 
     def _check_recency(self, time_frame, entry_time):
-        max_delta = datetime.now(tz=timezone(timedelta(0))) - timedelta(minutes=time_frame)
+        max_delta = datetime.now(tz=timezone(
+            timedelta(0))) - timedelta(minutes=time_frame)
         if max_delta > entry_time:
             return False
         return True
 
     def get_build_record_info(self, project_name, ppa_name, source_name, source_version, build_id, time_frame):
-        result={'records': []}
+        result = {'records': []}
         if self.api_root is None:
             self._login()
 
@@ -310,12 +311,12 @@ class LPHandler(object):
             ppa = self._get_ppa(project, ppa_name)
         except LaunchPadLookupError as e:
             raise Exception(e.args)
-        
+
         brs = None
         if source_name is not None:
-            brs = ppa.getBuildRecords( source_name=source_name )
+            brs = ppa.getBuildRecords(source_name=source_name)
         else:
-            brs= ppa.getBuildRecords()
+            brs = ppa.getBuildRecords()
 
         for br in brs:
             if build_id is not None:
@@ -326,11 +327,12 @@ class LPHandler(object):
                 if source_version is not None:
                     if br.source_package_version == source_version:
                         if self._check_recency(time_frame, br.datecreated):
-                            result['records'].append(self._build_entry_result(br))
+                            result['records'].append(
+                                self._build_entry_result(br))
                 else:
                     if self._check_recency(time_frame, br.datecreated):
                         result['records'].append(self._build_entry_result(br))
-        
+
         return result
 
 

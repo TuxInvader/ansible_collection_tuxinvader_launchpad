@@ -3,6 +3,7 @@
 from __future__ import (absolute_import, division, print_function)
 from ansible_collections.tuxinvader.launchpad.plugins.module_utils.lpad import LPHandler
 from ansible.module_utils.basic import AnsibleModule
+import os
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -35,7 +36,6 @@ EXAMPLES = r'''
 - name: Get tuxinvaders details
   user_info:
     name: tuxinvader
-    authorize: true
   environment:
     LP_ACCESS_TOKEN: kjaslkdjalksd
     LP_ACCESS_SECRET: alskjajsdlk
@@ -59,8 +59,7 @@ message:
 def run_module():
     # define available arguments/parameters a user can pass to the module
     module_args = dict(
-        name=dict(type='str', required=True),
-        authorize=dict(type='bool', required=False, default=False)
+        name=dict(type='str', required=True)
     )
 
     # seed the result dict in the object
@@ -92,7 +91,10 @@ def run_module():
     result['user'] = module.params['name']
 
     try:
-        launchpad = LPHandler(module.params['authorize'])
+        auth = False
+        if os.environ.get('LP_ACCESS_TOKEN') is not None:
+            auth = True
+        launchpad = LPHandler(auth)
         lp_result = launchpad.get_user_info(module.params['name'])
         result = {**result, **lp_result}
     except Exception as e:

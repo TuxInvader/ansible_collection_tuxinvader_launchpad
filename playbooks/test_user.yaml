@@ -8,6 +8,5 @@
     - name: Test User Info
       user_info:
         name: tuxinvader
-        authorize: no
       register: tux
       

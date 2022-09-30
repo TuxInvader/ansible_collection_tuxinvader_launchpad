@@ -3,6 +3,7 @@
 from __future__ import (absolute_import, division, print_function)
 from ansible_collections.tuxinvader.launchpad.plugins.module_utils.lpad import LPHandler
 from ansible.module_utils.basic import AnsibleModule
+import os
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -37,12 +38,6 @@ options:
         default: Published
         type: str
 
-    authorize:
-        description: Use an Authenticated connection to launchpad. You need to set LP_ACCESS_[TOKEN|SECRET] env vars for authentication
-        required: false
-        default: false
-        type: bool
-
 author:
     - Mark Boddington (@TuxInvader)
 '''
@@ -53,7 +48,6 @@ EXAMPLES = r'''
   ppa_info:
     project: ~tuxinvader
     name: lts-mainline
-    authorize: true
   environment:
     LP_ACCESS_TOKEN: kjaslkdjalksd
     LP_ACCESS_SECRET: alskjajsdlk
@@ -100,8 +94,7 @@ def run_module():
     module_args = dict(
         name=dict(type='str', required=True),
         project=dict(type='str', required=True),
-        source_filter=dict(type='str', required=False, default='Published'),
-        authorize=dict(type='bool', required=False, default=False)
+        source_filter=dict(type='str', required=False, default='Published')
     )
 
     # seed the result dict in the object
@@ -131,7 +124,11 @@ def run_module():
         module.exit_json(**result)
 
     try:
-        launchpad = LPHandler(module.params['authorize'])
+        auth = False
+        if os.environ.get('LP_ACCESS_TOKEN') is not None:
+            auth = True
+        launchpad = LPHandler(auth)
+
         lp_result = launchpad.get_ppa_info(
             module.params['project'], module.params['name'], module.params['source_filter'])
         result = {**result, **lp_result}

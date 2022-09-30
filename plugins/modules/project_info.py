@@ -3,6 +3,7 @@
 from __future__ import (absolute_import, division, print_function)
 from ansible_collections.tuxinvader.launchpad.plugins.module_utils.lpad import LPHandler
 from ansible.module_utils.basic import AnsibleModule
+import os
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -28,12 +29,6 @@ options:
         default: Active
         type: str
 
-    authorize:
-        description: Use an Authenticated connection to launchpad. You need to set LP_ACCESS_[TOKEN|SECRET] env vars for authentication
-        required: false
-        default: false
-        type: bool
-
 author:
     - Mark Boddington (@TuxInvader)
 '''
@@ -43,7 +38,6 @@ EXAMPLES = r'''
 - name: Get ~tuxinvaders details
   project_info:
     name: ~tuxinvader
-    authorize: true
   environment:
     LP_ACCESS_TOKEN: kjaslkdjalksd
     LP_ACCESS_SECRET: alskjajsdlk
@@ -84,8 +78,7 @@ def run_module():
     # define available arguments/parameters a user can pass to the module
     module_args = dict(
         name=dict(type='str', required=True),
-        ppa_filter=dict(type='str', required=False, default="Active"),
-        authorize=dict(type='bool', required=False, default=False)
+        ppa_filter=dict(type='str', required=False, default="Active")
     )
 
     # seed the result dict in the object
@@ -115,8 +108,12 @@ def run_module():
         module.exit_json(**result)
 
     try:
-        launchpad = LPHandler(module.params['authorize'])
-        lp_result = launchpad.get_project_info(module.params['name'], module.params['ppa_filter'])
+        auth = False
+        if os.environ.get('LP_ACCESS_TOKEN') is not None:
+            auth = True
+        launchpad = LPHandler(auth)
+        lp_result = launchpad.get_project_info(
+            module.params['name'], module.params['ppa_filter'])
         result = {**result, **lp_result}
     except Exception as e:
         module.fail_json(msg=e.args, **result)

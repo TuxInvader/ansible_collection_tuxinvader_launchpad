@@ -3,6 +3,7 @@
 from __future__ import (absolute_import, division, print_function)
 from ansible_collections.tuxinvader.launchpad.plugins.module_utils.lpad import LPHandler
 from ansible_collections.tuxinvader.launchpad.plugins.module_utils.dput import Dput
+import os
 from ansible.module_utils.basic import AnsibleModule
 
 __metaclass__ = type

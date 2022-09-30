@@ -98,7 +98,7 @@ def run_module():
         module.exit_json(**result)
 
     try:
-        launchpad = LPHandler()
+        launchpad = LPHandler(False)
         details = launchpad.wait_interactive_login(
             module.params['credentials'])
         result = {**details, **result}
