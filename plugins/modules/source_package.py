@@ -33,9 +33,9 @@ options:
         type: str
 
     version:
-        description: The version of source package, the default is '*' (all versions)
+        description: The version of source package, the default is None (all versions)
         required: false
-        default: '*'
+        default: None
         type: str
 
     ensure:
@@ -139,7 +139,7 @@ def run_module():
     # define available arguments/parameters a user can pass to the module
     module_args = dict(
         name=dict(type='str', required=True),
-        version=dict(type='str', required=False, default="*"),
+        version=dict(type='str', required=False, default=None),
         project=dict(type='str', required=True),
         ppa=dict(type='str', required=True),
         ensure=dict(type='str', required=False, default="present"),

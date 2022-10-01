@@ -251,7 +251,7 @@ class LPHandler(object):
         for source in sources:
             if ensure.lower() == "absent":
                 if match.lower() == "exact" and source.source_package_name == name:
-                    if version == '*' or source.source_package_version == version:
+                    if version is None or source.source_package_version == version:
                         if source.status.lower() != "deleted":
                             source.requestDeletion()
                             result['changed'] = True
@@ -263,7 +263,7 @@ class LPHandler(object):
                 else:
                     regex_result = re.search(regex, source.source_package_name)
                     if regex_result is not None:
-                        if version == '*' or source.source_package_version == version:
+                        if version is None or source.source_package_version == version:
                             if source.status.lower() != "deleted":
                                 source.requestDeletion()
                                 result['changed'] = True
@@ -276,14 +276,14 @@ class LPHandler(object):
                                 source.source_package_version, version, regex, regex_result.group()))
             elif ensure.lower() == "present":
                 if match.lower() == "exact" and source.source_package_name == name:
-                    if version == '*' or source.source_package_version == version:
+                    if version is None or source.source_package_version == version:
                         if source.status.lower() == "published":
                             result['sources'].append(
                                 self._build_entry_result(source))
                 else:
                     regex_result = re.search(regex, source.source_package_name)
                     if regex_result is not None:
-                        if version == '*' or source.source_package_version == version:
+                        if version is None or source.source_package_version == version:
                             if source.status.lower() == "published":
                                 result['sources'].append(
                                     self._build_entry_result(source))
