@@ -20,11 +20,6 @@
         displayname: ppa for random testingses
         description: This has nothing to do with {{ rand_string }}
         ensure: present
-      
-    - name: Ensure Jammy PPA is removed
-      ppa:
-        project: ~tuxinvader
-        name: jammy-testing-mainline
-        ensure: absent
+
         
       

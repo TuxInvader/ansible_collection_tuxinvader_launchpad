@@ -8,11 +8,6 @@
     LP_ACCESS_SECRET: "{{ secret_access_secret }}"
 
   tasks:
-
-    - name: Test PPA Info
-      ppa_info:
-        project: ~tuxinvader
-        name: jammy-mainline
       
     - name: Test PPA Info (random)
       ppa_info:

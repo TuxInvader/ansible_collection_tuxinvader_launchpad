@@ -12,7 +12,7 @@
     - name: Ensure kernel 6.0-rc7 is removed
       source_package:
         project: ~tuxinvader
-        ppa: jammy-mainline
+        ppa: my-random-ppa
         name: linux-generic
         version: "6.0-rc7"
         match: starts_with
