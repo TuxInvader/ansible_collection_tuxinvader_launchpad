@@ -15,7 +15,9 @@ version_added: "1.0.0"
 
 description: Retrieve facts about a Launchpad PPA and its source_packages.
              Facts about the PPA are returned in a dictionary called 'details', and a list of published source_packages
-             is returned in a list called 'sources'
+             is returned in a list called 'sources'. By default we return source packages which are in the 'Published'
+             state, but you can apply a source_filter of '*' to see all packages, or one of 'Pending', 'Published',
+             'Superseded', 'Deleted' or 'Obsolete'
 
 options:
     project:
