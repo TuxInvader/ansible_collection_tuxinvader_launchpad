@@ -200,7 +200,7 @@ class LPHandler(object):
         return result
 
     def prune_ppa(self, project_name, name, max_sources):
-        result = {'pruned': {}, 'count': 0}
+        result = {'pruned': [], 'count': 0}
         if self.api_root is None:
             self._login()
 
@@ -215,7 +215,7 @@ class LPHandler(object):
         if pb.total_size > max_sources:
             ascpkgs = sorted(pb, key=lambda x: x.date_published)
             for package in ascpkgs[:(pb.total_size - max_sources)]:
-                result['pruned'][package.source_package_name] = package.date_published
+                result['pruned'].append( self._build_entry_result(package))
                 result['count'] += 1
                 package.requestDeletion()
         return result
