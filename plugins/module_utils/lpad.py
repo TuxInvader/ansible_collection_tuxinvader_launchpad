@@ -215,7 +215,7 @@ class LPHandler(object):
         if pb.total_size > max_sources:
             ascpkgs = sorted(pb, key=lambda x: x.date_published)
             for package in ascpkgs[:(pb.total_size - max_sources)]:
-                result['pruned'].append( self._build_entry_result(package))
+                result['pruned'].append(self._build_entry_result(package))
                 result['count'] += 1
                 package.requestDeletion()
         return result

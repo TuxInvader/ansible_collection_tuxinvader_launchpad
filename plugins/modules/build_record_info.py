@@ -15,7 +15,7 @@ short_description: Get info about Build records for a source package in a PPA
 version_added: "1.0.3"
 
 description: Get info about build records for a source package in a PPA. The module returns a list of matching records. Each item is a dictionary including a
-            link to the log of the build and buildstate. The buildstate can be one of; "Needs building", "Successfully built", "Failed to build", 
+            link to the log of the build and buildstate. The buildstate can be one of; "Needs building", "Successfully built", "Failed to build",
             "Dependency wait", "Chroot problem", "Build for superseded Source", "Currently building", "Failed to upload", "Uploading build",
             "Cancelling build" or "Cancelled build". See the sample for more properties in the dictionary.
 
@@ -83,14 +83,14 @@ EXAMPLES = r'''
 
 RETURN = r'''
 # Returns a list containing matching build records
-records: 
+records:
     description: A list of matching build records
     type: list
     returned: always
     sample: [
         {
             "arch_tag": "amd64",
-            "build_log_url": "https://launchpad.net/~tuxinvader/+archive/ubuntu/my-random-ppa/+build/24511076/+files/buildlog_ubuntu-focal-amd64.linux-generic-5.19_5.19.12_BUILDING.txt.gz",
+            "build_log_url": "https://launchpad.net/~me/+archive/ubuntu/ppa/+build/246/+files/buildlog_snip-5.19_5.19.12_BUILDING.txt.gz",
             "buildstate": "Uploading build",
             "can_be_cancelled": false,
             "can_be_rescored": false,
