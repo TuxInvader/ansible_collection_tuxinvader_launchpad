@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from __future__ import (absolute_import, division, print_function)
+from nis import match
 from ansible_collections.tuxinvader.launchpad.plugins.module_utils.lpad import LPHandler
 from ansible.module_utils.basic import AnsibleModule
 __metaclass__ = type
@@ -31,12 +32,30 @@ options:
         type: int
         default: 2
 
+    source_name:
+        description: The source_package name to limit pruning to matching packages
+        required: false
+        type: string
+        default: None
+
+    match:
+        description: How to match the source_package name, either [exact, starts_with_ ends_with, contains, or regex]
+        required: false
+        type: string
+        defailt: exact
+
+    prune_by:
+        description: How should the packages be ordered prior to pruning, options are [date, or version]
+        required: false
+        type: string
+        default: date
+
 author:
     - Mark Boddington (@TuxInvader)
 '''
 
 EXAMPLES = r'''
-# Prune the PPA down to 2 source packages
+# Prune the PPA by publish date down to 2 source packages
 - name: Prune mainline PPA to most recent 2 releases
   prune_ppa:
     name: lts-mainline
@@ -45,6 +64,16 @@ EXAMPLES = r'''
   environment:
     LP_ACCESS_TOKEN: kjaslkdjalksd
     LP_ACCESS_SECRET: alskjajsdlk
+
+# Prune PPA by package version to 4 packages matching regex 'linux-[0-9]+'
+- name: prune lts-mainline PPA to 4 linux-[0-9]+ packages by regex, ordered by version
+  prune_ppa:
+    name: lts-mainline
+    project: ~tuxinvader
+    source_name: "linux[0-9]+"
+    match: regex
+    prune_by: version
+    max_sources: 4
 '''
 
 RETURN = r'''
@@ -55,7 +84,12 @@ count:
     returned: always
     sample: 1
 pruned:
-  description: Dictionary of package names and publication dates
+  description: Dictionary of package names and publication dates which were pruned
+  type: dict
+  returned: always
+  sample: { "linux-5.19.10": "2022-09-21T14:28:54.544426+00:00" }
+remaining:
+  description: Dictionary of package names and publication dates remaining
   type: dict
   returned: always
   sample: { "linux-5.19.10": "2022-09-21T14:28:54.544426+00:00" }
@@ -68,6 +102,9 @@ def run_module():
         name=dict(type='str', required=True),
         project=dict(type='str', required=True),
         max_sources=dict(type='int', required=False, default=2),
+        source_name=dict(type='str', required=False, default=None),
+        match=dict(type='str', required=False, default="exact"),
+        prune_by=dict(type='str', required=False, default="date"),
     )
 
     # seed the result dict in the object
@@ -97,7 +134,7 @@ def run_module():
     try:
         launchpad = LPHandler(True)
         lp_result = launchpad.prune_ppa(
-            module.params['project'], module.params['name'], module.params['max_sources'])
+            module.params['project'], module.params['name'], module.params['max_sources'], module.params['source_name'], module.params['match'], module.params['prune_by'])
         result = {**result, **lp_result}
         if result['count'] > 0:
             result['changed'] = True

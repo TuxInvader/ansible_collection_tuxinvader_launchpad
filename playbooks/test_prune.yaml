@@ -9,10 +9,26 @@
 
   tasks:
       
-    - name: Prune my-random PPA to 2 packages
+    - name: Prune my-random PPA to 6 packages
       prune_ppa:
         name: my-random-ppa
         project: ~tuxinvader
         max_sources: 2
 
+    - name: Prune lts-mainline PPA to 2 linux-[0-9]+ packages
+      prune_ppa:
+        name: lts-mainline
+        project: ~tuxinvader
+        source_name: "linux-[0-9]+"
+        match: regex
+        prune_by: version
+        max_sources: 2
 
+    - name: Prune lts-mainline PPA to 2 linux-generic packages
+      prune_ppa:
+        name: lts-mainline
+        project: ~tuxinvader
+        source_name: "linux-generic"
+        match: starts_with
+        prune_by: version
+        max_sources: 2

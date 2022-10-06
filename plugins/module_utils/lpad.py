@@ -23,9 +23,11 @@ class LPHandler(object):
         self._authorize = authorize
         if authorize:
             if os.environ.get('LP_ACCESS_TOKEN') is None:
-                raise Exception("You need to set 'LP_ACCESS_TOKEN' and 'LP_ACCESS_SECRET' environment variables")
+                raise Exception(
+                    "You need to set 'LP_ACCESS_TOKEN' and 'LP_ACCESS_SECRET' environment variables")
             if os.environ.get('LP_ACCESS_SECRET') is None:
-                raise Exception("You need to set 'LP_ACCESS_TOKEN' and 'LP_ACCESS_SECRET' environment variables")
+                raise Exception(
+                    "You need to set 'LP_ACCESS_TOKEN' and 'LP_ACCESS_SECRET' environment variables")
             self._credStore = EnvCredentialStore(consumer)
             self._credentials = self._credStore.load(consumer)
 
@@ -73,6 +75,43 @@ class LPHandler(object):
             raise LaunchPadLookupError("Project '" + name + "' not found")
         return project
 
+    def _get_ppa(self, project, name):
+        ppa = list(filter(lambda x: x.name == name, project.ppas))
+        if len(ppa) == 0:
+            raise LaunchPadLookupError("PPA '" + name + "' not found")
+        return ppa[0]
+
+    def _get_sources(self, ppa, source_name, match, status=None):
+        sources = None
+        regex = ""
+
+        if source_name is not None:
+            if match.lower() == "exact":
+                sources = ppa.getPublishedSources(source_name=source_name) if status is None else ppa.getPublishedSources(
+                    source_name=source_name, status=status)
+            else:
+                sources = ppa.getPublishedSources(
+                ) if status is None else ppa.getPublishedSources(status=status)
+                if match.lower() == "starts_with":
+                    regex = r"^%s.*" % source_name
+                elif match.lower() == "ends_with":
+                    regex = r".*%s$" % source_name
+                elif match.lower() == "contains":
+                    regex = r".*%s.*" % source_name
+                else:
+                    regex = r"%s" % source_name
+                filtered = []
+                for source in sources:
+                    regex_result = re.search(regex, source.source_package_name)
+                    if regex_result is not None:
+                        filtered.append(source)
+                return filtered
+        else:
+            sources = ppa.getPublishedSources(
+            ) if status is None else ppa.getPublishedSources(status=status)
+
+        return sources
+
     def _build_project_result(self, project, ppa_filter):
         result = {'details': {}, 'ppas': []}
 
@@ -91,12 +130,6 @@ class LPHandler(object):
                     ppa_atts[att] = ppa.lp_get_parameter(att)
                 result['ppas'].append(ppa_atts)
         return result
-
-    def _get_ppa(self, project, name):
-        ppa = list(filter(lambda x: x.name == name, project.ppas))
-        if len(ppa) == 0:
-            raise LaunchPadLookupError("PPA '" + name + "' not found")
-        return ppa[0]
 
     def _build_entry_result(self, source_package):
         source_atts = {}
@@ -138,7 +171,7 @@ class LPHandler(object):
 
         return self._build_project_result(project, status_filter)
 
-    def get_ppa_info(self, project_name, name, source_filter):
+    def get_ppa_info(self, project_name, name, status_filter):
         if self.api_root is None:
             self._login()
 
@@ -148,9 +181,9 @@ class LPHandler(object):
         except LaunchPadLookupError as e:
             raise Exception(e.args)
 
-        return self._build_ppa_result(ppa, source_filter)
+        return self._build_ppa_result(ppa, status_filter)
 
-    def upsert_ppa(self, project_name, name, ensure, source_filter, displayname=None, description=None):
+    def upsert_ppa(self, project_name, name, ensure, status_filter, displayname=None, description=None):
         result = {}
         ppa = None
         changed = False
@@ -195,14 +228,18 @@ class LPHandler(object):
                 return {'details': {}, 'sources': []}
             raise Exception(e.args)
 
-        result = self._build_ppa_result(ppa, source_filter)
+        result = self._build_ppa_result(ppa, status_filter)
         result['changed'] = changed
         return result
 
-    def prune_ppa(self, project_name, name, max_sources):
-        result = {'pruned': [], 'count': 0}
+    def prune_ppa(self, project_name, name, max_sources, source_name=None, match="exact", prune_by="date"):
+        result = {'pruned': [], 'remaining': [], 'count': 0, 'found': 0}
         if self.api_root is None:
             self._login()
+
+        prune_by_opts = ["date", "version"]
+        if prune_by not in prune_by_opts:
+            raise Exception("prune_by must be one of %s" % prune_by_opts)
 
         try:
             project = self._get_project(project_name)
@@ -210,14 +247,40 @@ class LPHandler(object):
         except LaunchPadLookupError as e:
             raise Exception(e.args)
 
-        pb = ppa.getPublishedSources(status="Published")
+        sources = self._get_sources(ppa, source_name, match, "Published")
 
-        if pb.total_size > max_sources:
-            ascpkgs = sorted(pb, key=lambda x: x.date_published)
-            for package in ascpkgs[:(pb.total_size - max_sources)]:
+        count = 0
+        if type(sources) is list:
+            count = len(sources)
+        else:
+            count = sources.total_size
+        result['found'] = count
+
+        ascpkgs = []
+        if prune_by == "date":
+            ascpkgs = sorted(sources, key=lambda x: x.date_published)
+        else:
+            # There must be a better way than this. We replace (ubuntu|dfsg|build) strings with zero (0), and then we
+            # order the versions by integers in the version string upto the point we find a word, and then we truncate
+            # the version at that point. Replacing any [+:~-] with dots [.]
+            srcItems = {}
+            srcKeys = []
+            for source in sources:
+                srcKey = re.search("^[0-9\.]+[0-9]+", re.sub("(ubuntu|dfsg|build)", "0", re.sub("[\-:~\+]", ".",
+                                                                                                str(source.source_package_version)))).group()
+                srcKeys.append(srcKey)
+                srcItems[srcKey] = source
+            for item in sorted(srcKeys, key=lambda x: [int(y) for y in x.split('.')]):
+                ascpkgs.append(srcItems[item])
+
+        if count > max_sources:
+            for package in ascpkgs[:(count - max_sources)]:
                 result['pruned'].append(self._build_entry_result(package))
                 result['count'] += 1
                 package.requestDeletion()
+        for package in ascpkgs[(count - max_sources):]:
+            result['remaining'].append(self._build_entry_result(package))
+
         return result
 
     def check_source_package(self, project_name, ppa_name, name, version, ensure, match):
@@ -233,60 +296,24 @@ class LPHandler(object):
         except LaunchPadLookupError as e:
             raise Exception(e.args)
 
-        sources = None
-        if match.lower() == "exact":
-            sources = ppa.getPublishedSources(source_name=name)
-        else:
-            sources = ppa.getPublishedSources()
-
-        if match.lower() == "starts_with":
-            regex = r"^%s.*" % name
-        elif match.lower() == "ends_with":
-            regex = r".*%s$" % name
-        elif match.lower() == "contains":
-            regex = r".*%s.*" % name
-        else:
-            regex = r"%s" % name
+        sources = self._get_sources(ppa, name, match)
 
         for source in sources:
             if ensure.lower() == "absent":
-                if match.lower() == "exact" and source.source_package_name == name:
-                    if version is None or source.source_package_version == version:
-                        if source.status.lower() != "deleted":
-                            source.requestDeletion()
-                            result['changed'] = True
+                if version is None or source.source_package_version == version:
+                    if source.status.lower() != "deleted":
+                        source.requestDeletion()
+                        result['changed'] = True
+                    result['sources'].append(self._build_entry_result(source))
+                else:
+                    if source.status.lower() != "deleted":
+                        result['messages'].append("package found - version mismatch: %s != %s, status: %s" % (
+                            source.source_package_version, version, source.status))
+            elif ensure.lower() == "present":
+                if version is None or source.source_package_version == version:
+                    if source.status.lower() == "published":
                         result['sources'].append(
                             self._build_entry_result(source))
-                    else:
-                        result['message'] = "package found, but version mismatch. %s != %s" % (
-                            source.source_package_version, version)
-                else:
-                    regex_result = re.search(regex, source.source_package_name)
-                    if regex_result is not None:
-                        if version is None or source.source_package_version == version:
-                            if source.status.lower() != "deleted":
-                                source.requestDeletion()
-                                result['changed'] = True
-                            result['sources'].append(
-                                self._build_entry_result(source))
-                            result['messages'].append(
-                                "regex_matched: %s" % regex_result.group())
-                        else:
-                            result['messages'].append("package unchanged, version mismatch: '%s' not '%s', regex: '%s', result: '%s'" % (
-                                source.source_package_version, version, regex, regex_result.group()))
-            elif ensure.lower() == "present":
-                if match.lower() == "exact" and source.source_package_name == name:
-                    if version is None or source.source_package_version == version:
-                        if source.status.lower() == "published":
-                            result['sources'].append(
-                                self._build_entry_result(source))
-                else:
-                    regex_result = re.search(regex, source.source_package_name)
-                    if regex_result is not None:
-                        if version is None or source.source_package_version == version:
-                            if source.status.lower() == "published":
-                                result['sources'].append(
-                                    self._build_entry_result(source))
             else:
                 raise Exception(
                     "Permitted values for 'ensure' are 'present' or 'absent'")
