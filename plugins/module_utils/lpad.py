@@ -266,7 +266,7 @@ class LPHandler(object):
             srcItems = {}
             srcKeys = []
             for source in sources:
-                srcKey = re.search("^[0-9\.]+[0-9]+", re.sub("(ubuntu|dfsg|build)", "0", re.sub("[\-:~\+]", ".",
+                srcKey = re.search(r"^[0-9.]+[0-9]+", re.sub("(ubuntu|dfsg|build)", "0", re.sub(r"[-:~+]", r".",
                                                                                                 str(source.source_package_version)))).group()
                 srcKeys.append(srcKey)
                 srcItems[srcKey] = source
@@ -285,7 +285,6 @@ class LPHandler(object):
 
     def check_source_package(self, project_name, ppa_name, name, version, ensure, match):
         result = {'sources': [], 'messages': []}
-        regex = None
 
         if self.api_root is None:
             self._login()

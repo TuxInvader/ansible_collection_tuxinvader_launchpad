@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 from __future__ import (absolute_import, division, print_function)
-from nis import match
 from ansible_collections.tuxinvader.launchpad.plugins.module_utils.lpad import LPHandler
 from ansible.module_utils.basic import AnsibleModule
 __metaclass__ = type
@@ -134,7 +133,8 @@ def run_module():
     try:
         launchpad = LPHandler(True)
         lp_result = launchpad.prune_ppa(
-            module.params['project'], module.params['name'], module.params['max_sources'], module.params['source_name'], module.params['match'], module.params['prune_by'])
+            module.params['project'], module.params['name'], module.params['max_sources'], module.params['source_name'], 
+            module.params['match'], module.params['prune_by'])
         result = {**result, **lp_result}
         if result['count'] > 0:
             result['changed'] = True
