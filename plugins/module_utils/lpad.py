@@ -270,7 +270,7 @@ class LPHandler(object):
                                                                                                 str(source.source_package_version)))).group()
                 srcKeys.append(srcKey)
                 srcItems[srcKey] = source
-            for item in sorted(srcKeys, key=lambda x: [int(y) for y in x.split('.')]):
+            for item in sorted(srcKeys):
                 ascpkgs.append(srcItems[item])
 
         if count > max_sources:
